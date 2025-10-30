@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Form
 from fastapi.responses import PlainTextResponse
 from twilio.twiml.voice_response import VoiceResponse
+import os
 
 app = FastAPI()
 
-ACCOUNT_SID = "ACcd0f246d50e5a9bb5376803e3d1c433c"  # your Twilio SID
-AUTH_TOKEN = "5b8ccdb80cbe28f8559d6fd56989d6a4"      # your Twilio Auth Token
+# ✅ Load your Twilio credentials from environment variables (GitHub-safe)
+ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 
 # ---- Simple NLP ----
 def get_intent(text):
@@ -29,7 +31,11 @@ def get_intent(text):
 async def ivr():
     r = VoiceResponse()
     r.say("Hello. Welcome to the airline service. You may speak after the beep.")
-    r.gather(input="speech", action="/process", timeout=4)
+    r.gather(
+        input="speech",
+        action="/process",
+        timeout=4
+    )
     return str(r)
 
 
@@ -50,4 +56,3 @@ async def process(speechResult: str = Form("")):
         r.redirect("/ivr")
 
     return str(r)
-
