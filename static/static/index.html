@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IVR Web Simulator</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎧 IVR Web Simulator</h1>
+
+        <div class="box">
+            <textarea id="text" placeholder="Type something..."></textarea>
+
+            <button onclick="sendText()">Send</button>
+
+            <p class="divider">OR</p>
+
+            <button id="micBtn" onclick="startListening()">🎤 Speak</button>
+        </div>
+
+        <div id="responseBox">
+            <h3>Response:</h3>
+            <p id="response"></p>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
