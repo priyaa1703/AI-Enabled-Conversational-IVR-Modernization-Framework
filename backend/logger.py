@@ -1,3 +1,5 @@
+from backend.logger import log
+
 import datetime, os
 
 LOG_FILE = "ivr_log.txt"
