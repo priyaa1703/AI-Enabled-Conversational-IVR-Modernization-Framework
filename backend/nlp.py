@@ -1,3 +1,5 @@
+# backend/nlp.py
+
 def get_intent(text: str) -> str:
     text = (text or "").lower()
     booking_words = ["book", "booking", "reserve", "flight", "ticket"]
@@ -10,4 +12,5 @@ def get_intent(text: str) -> str:
         return "status"
     if any(w in text for w in cancel_words):
         return "cancel"
+
     return "unknown"
