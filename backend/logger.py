@@ -1,11 +1,27 @@
-from backend.logger import log
+import logging
+from logging.handlers import RotatingFileHandler
+import os
 
-import datetime, os
+# Create logs directory if not exists
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
 
-LOG_FILE = "ivr_log.txt"
+# Log file path
+LOG_FILE = os.path.join(LOG_DIR, "app.log")
 
-def log(event: str, message: str):
-    time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    line = f"[{time}] {event} -> {message}\n"
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(line)
+# Logger setup
+logger = logging.getLogger("app-logger")
+logger.setLevel(logging.INFO)
+
+# Rotating file handler (5 MB per file, keep 3 backups)
+handler = RotatingFileHandler(LOG_FILE, maxBytes=5 * 1024 * 1024, backupCount=3)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+
+# To avoid duplicates
+if not logger.handlers:
+    logger.addHandler(handler)
+
+def log(message: str):
+    """Simple log function used everywhere."""
+    logger.info(message)

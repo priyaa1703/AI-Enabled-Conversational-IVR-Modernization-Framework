@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from backend.logger import log
 
+
 from nlp import get_intent
 
 app = FastAPI(title="IVR System API")
