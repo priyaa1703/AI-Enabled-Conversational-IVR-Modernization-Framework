@@ -2,7 +2,8 @@ from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from logger import log
+from backend.logger import log
+
 from nlp import get_intent
 
 app = FastAPI(title="IVR System API")
