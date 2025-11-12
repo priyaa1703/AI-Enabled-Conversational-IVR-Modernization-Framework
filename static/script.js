@@ -1,47 +1,47 @@
-const SEND_URL = "/predict";
+const chatBox = document.getElementById("chatBox");
+const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 const micBtn = document.getElementById("micBtn");
-const textEl = document.getElementById("text");
-const responseText = document.getElementById("responseText");
 
-sendBtn.onclick = () => sendText();
-micBtn.onclick = () => startListening();
-
-async function sendText(){
-    const text = textEl.value || "";
-    responseText.innerText = "Thinking...";
-    try{
-        const res = await fetch(SEND_URL, {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({text})
-        });
-        const data = await res.json();
-        responseText.innerText = data.reply || JSON.stringify(data);
-        speak(data.reply || data.intent || "No reply");
-    }catch(err){
-        responseText.innerText = "Error connecting to backend";
-        console.error(err);
-    }
+// Append message to chat
+function addMessage(text, type) {
+    const msg = document.createElement("div");
+    msg.className = type === "bot" ? "bot-msg" : "user-msg";
+    msg.innerText = text;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-function startListening(){
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SpeechRecognition){ alert("Speech recognition not supported"); return; }
-    const rec = new SpeechRecognition();
-    rec.lang = "en-US";
-    rec.onresult = (e) => {
-        textEl.value = e.results[0][0].transcript;
-        sendText();
+// Send user text to backend
+async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    userInput.value = "";
+
+    const res = await fetch("/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+    });
+
+    const data = await res.json();
+    addMessage(data.reply, "bot");
+}
+
+// Voice input
+micBtn.onclick = () => {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = "en-US";
+    recognition.start();
+
+    recognition.onresult = (event) => {
+        userInput.value = event.results[0][0].transcript;
     };
-    rec.onerror = () => { alert("Speech recognition error"); };
-    rec.start();
-}
+};
 
-function speak(msg){
-    if(!msg) return;
-    const u = new SpeechSynthesisUtterance(msg);
-    u.lang = "en-US";
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-}
+sendBtn.onclick = sendMessage;
+userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+});

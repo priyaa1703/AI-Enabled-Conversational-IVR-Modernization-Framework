@@ -1,15 +1,17 @@
-from fastapi import FastAPI, Form
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+
 from backend.logger import log
-
-
 from backend.nlp import get_intent
 
+app = FastAPI()
 
-app = FastAPI(title="IVR System API")
+# ✅ Serve static UI files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# ✅ Allow CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,31 +20,36 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-class TextIn(BaseModel):
-    text: str
-
-reply_map = {
-    "booking": "Booking selected. Redirecting…",
-    "status": "Status checking initiated.",
-    "cancel": "Cancellation process started.",
-    "unknown": "Sorry, I didn’t understand your request."
-}
-
+# ✅ HOME → serve index.html UI
 @app.get("/")
-def home():
-    log("ACCESS_HOME", "Home endpoint accessed")
-    return {"message": "IVR backend running!"}
+async def home():
+    log("ACCESS_HOME", "User opened the IVR UI")
+    return FileResponse("static/index.html")
 
-@app.post("/predict")
-def predict_text(data: TextIn):
-    text = data.text or ""
-    log("REQUEST_TEXT", text)
+
+# ✅ PROCESS TEXT (Main IVR Logic)
+@app.post("/process")
+async def process_text(request: Request):
+    data = await request.json()
+    text = data.get("text", "")
+
+    log("USER_MESSAGE", text)
+
     intent = get_intent(text)
-    log("INTENT_IDENTIFIED", intent)
-    return {
-        "user_text": text,
-        "intent": intent,
-        "reply": reply_map.get(intent, reply_map["unknown"])
-    }
+    log("DETECTED_INTENT", intent)
+
+    # ✅ Simple IVR Logic
+    if intent == "booking":
+        reply = "Sure! I can help you with flight booking. What is your destination?"
+    elif intent == "status":
+        reply = "Alright! Please provide your booking ID to check the status."
+    elif intent == "cancel":
+        reply = "I can help you cancel your booking. Please share your ticket number."
+    else:
+        reply = "I'm not sure I understood that. Could you please repeat?"
+
+    log("BOT_REPLY", reply)
+
+    return JSONResponse({"reply": reply})
+
