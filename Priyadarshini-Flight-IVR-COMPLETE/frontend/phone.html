@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📞 Priyadarshini - Phone IVR</title>
+    <link rel="stylesheet" href="/static/phone-style.css">
+</head>
+<body>
+    <div class="phone-container">
+        <div class="phone-header">
+            <h1>📞 Priyadarshini IVR</h1>
+            <p>Press Start Call to begin</p>
+            <a href="/" class="mode-link">💬 Chat Mode</a>
+        </div>
+
+        <div class="phone-display">
+            <div class="display-time" id="time">00:00</div>
+            <div class="display-text" id="display">Press Start Call</div>
+            <div class="call-info">
+                <div class="stat-item"><span class="stat-label">Active:</span> <span class="stat-value" id="activeCount">0</span></div>
+                <div class="stat-item"><span class="stat-label">Total:</span> <span class="stat-value" id="totalCount">0</span></div>
+            </div>
+        </div>
+
+        <div class="phone-keypad">
+            <div class="keypad-row">
+                <button class="key" onclick="pressKey('1')"><div class="key-num">1</div></button>
+                <button class="key" onclick="pressKey('2')"><div class="key-num">2</div><div class="key-letters">ABC</div></button>
+                <button class="key" onclick="pressKey('3')"><div class="key-num">3</div><div class="key-letters">DEF</div></button>
+            </div>
+            <div class="keypad-row">
+                <button class="key" onclick="pressKey('4')"><div class="key-num">4</div><div class="key-letters">GHI</div></button>
+                <button class="key" onclick="pressKey('5')"><div class="key-num">5</div><div class="key-letters">JKL</div></button>
+                <button class="key" onclick="pressKey('6')"><div class="key-num">6</div><div class="key-letters">MNO</div></button>
+            </div>
+            <div class="keypad-row">
+                <button class="key" onclick="pressKey('7')"><div class="key-num">7</div><div class="key-letters">PQRS</div></button>
+                <button class="key" onclick="pressKey('8')"><div class="key-num">8</div><div class="key-letters">TUV</div></button>
+                <button class="key" onclick="pressKey('9')"><div class="key-num">9</div><div class="key-letters">WXYZ</div></button>
+            </div>
+            <div class="keypad-row">
+                <button class="key" onclick="pressKey('*')"><div class="key-num">*</div></button>
+                <button class="key" onclick="pressKey('0')"><div class="key-num">0</div></button>
+                <button class="key" onclick="pressKey('#')"><div class="key-num">#</div></button>
+            </div>
+        </div>
+
+        <div class="phone-controls">
+            <button class="btn-start" id="startBtn" onclick="startCall()">📞 Start Call</button>
+            <button class="btn-hangup" id="hangupBtn" onclick="hangupCall()">📵 Hang Up</button>
+            <button class="btn-speak" onclick="speakMessage()">🎤 Speak</button>
+        </div>
+
+        <div class="session-controls">
+            <h3>Session Info</h3>
+            <div class="call-stats">
+                <div class="stat"><strong>Active:</strong> <span id="activeSessions">0</span></div>
+                <div class="stat"><strong>Total:</strong> <span id="totalSessions">0</span></div>
+            </div>
+        </div>
+
+        <div class="call-log">
+            <h3>Call Log</h3>
+            <div id="callLog"><p>No calls yet</p></div>
+        </div>
+    </div>
+
+    <script>
+let sessionId = localStorage.getItem('priyadarshini_session') || generateSessionId();
+let isCallActive = false;
+let callStartTime = 0;
+let dtmfBuffer = '';
+
+function generateSessionId() {
+    const id = 'call_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('priyadarshini_session', id);
+    return id;
+}
+
+function startCall() {
+    isCallActive = true;
+    callStartTime = Date.now();
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('hangupBtn').style.display = 'block';
+    document.getElementById('display').textContent = 'Press 1=Book, 2=Change, 3=Upgrade, 4=Status, 5=Cancel, 0=Menu';
+    updateTime();
+    const timerInterval = setInterval(() => {
+        if (isCallActive) updateTime();
+        else clearInterval(timerInterval);
+    }, 1000);
+    addToCallLog('Call started - ' + new Date().toLocaleTimeString());
+}
+
+function hangupCall() {
+    isCallActive = false;
+    dtmfBuffer = '';
+    document.getElementById('startBtn').style.display = 'block';
+    document.getElementById('hangupBtn').style.display = 'none';
+    document.getElementById('display').textContent = 'Press Start Call';
+    document.getElementById('time').textContent = '00:00';
+    addToCallLog('Call ended');
+}
+
+function pressKey(key) {
+    if (!isCallActive) { alert('Start call first'); return; }
+
+    dtmfBuffer += key;
+
+    if (key === '#') {
+        sendDTMF(dtmfBuffer.slice(0, -1));
+        dtmfBuffer = '';
+    } else if (key === '*') {
+        dtmfBuffer = dtmfBuffer.slice(0, -1);
+    }
+
+    document.getElementById('display').textContent = 'You pressed: ' + key;
+}
+
+async function sendDTMF(dtmf) {
+    try {
+        const response = await fetch('/process', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: dtmf, session_id: sessionId })
+        });
+
+        const data = await response.json();
+        document.getElementById('display').textContent = data.reply || 'Error';
+    } catch (error) {
+        document.getElementById('display').textContent = 'Connection error';
+    }
+}
+
+function speakMessage() {
+    if (!('speechSynthesis' in window)) return;
+    const text = document.getElementById('display').textContent;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-IN';
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+}
+
+function updateTime() {
+    if (!isCallActive) return;
+    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    document.getElementById('time').textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+}
+
+function addToCallLog(message) {
+    const log = document.getElementById('callLog');
+    const time = new Date().toLocaleTimeString();
+    if (log.innerHTML.includes('No calls yet')) {
+        log.innerHTML = '';
+    }
+    log.innerHTML += '<p>[' + time + '] ' + message + '</p>';
+}
+    </script>
+</body>
+</html>
