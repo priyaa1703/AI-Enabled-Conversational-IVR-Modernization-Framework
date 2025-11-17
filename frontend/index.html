@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✈️ Priyadarshini - Flight Booking IVR</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <div class="header">
+                <h1>✈️ Priyadarshini</h1>
+                <p>Flight Booking IVR System</p>
+                <div class="status-bar">
+                    <div class="status-indicator"></div>
+                    <span>Online & Ready</span>
+                </div>
+                <a href="/phone" class="mode-link" style="margin-top: 12px; display: inline-block;">📞 Phone Mode</a>
+            </div>
+
+            <div class="chat-area">
+                <div class="messages" id="messages">
+                    <div class="message ai">
+                        <div class="message-bubble">
+                            ✈️ Welcome to Priyadarshini Flight Booking!
+                            Press: 1=Book Flight | 2=Change Booking | 3=Upgrade to Business | 4=Check Status | 5=Cancel
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <div class="input-group">
+                        <input type="text" class="input-field" id="input" placeholder="Type command or press key..." autocomplete="off">
+                        <button class="btn btn-voice" id="voiceBtn">🎤</button>
+                    </div>
+                    <button class="btn" id="sendBtn">Send →</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="info-card">
+                <h3>✈️ Services</h3>
+                <div class="services-list">
+                    <div class="service-item">📍 <strong>1</strong> - Book Flight</div>
+                    <div class="service-item">🔄 <strong>2</strong> - Change Booking</div>
+                    <div class="service-item">💼 <strong>3</strong> - Upgrade Business</div>
+                    <div class="service-item">📊 <strong>4</strong> - Check Status</div>
+                    <div class="service-item">❌ <strong>5</strong> - Cancel</div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>🎯 Quick Access</h3>
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="sendMessage('1')">✈️ Book</button>
+                    <button class="quick-btn" onclick="sendMessage('2')">🔄 Change</button>
+                    <button class="quick-btn" onclick="sendMessage('3')">💼 Upgrade</button>
+                    <button class="quick-btn" onclick="sendMessage('4')">📊 Status</button>
+                    <button class="quick-btn" onclick="sendMessage('5')">❌ Cancel</button>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>ℹ️ Features</h3>
+                <div class="info-text">
+                    <p>✅ Book multiple airlines</p>
+                    <p>✅ Modify bookings anytime</p>
+                    <p>✅ Upgrade to Business</p>
+                    <p>✅ Real-time status</p>
+                    <p>✅ 24/7 Support</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const messagesContainer = document.getElementById('messages');
+let sessionId = localStorage.getItem('priyadarshini_session') || generateSessionId();
+
+function generateSessionId() {
+    const id = 'flight_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('priyadarshini_session', id);
+    return id;
+}
+
+function addMessage(text, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ' + (isUser ? 'user' : 'ai');
+    messageDiv.innerHTML = '<div class="message-bubble">' + text + '</div>';
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+async function sendMessage(text = null) {
+    const msg = (text || input.value.trim());
+    if (!msg) return;
+
+    addMessage(msg, true);
+    if (!text) input.value = '';
+
+    try {
+        const response = await fetch('/process', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: msg, session_id: sessionId })
+        });
+
+        const data = await response.json();
+        setTimeout(() => addMessage(data.reply, false), 300);
+    } catch (e) {
+        addMessage('❌ Error. Try again.', false);
+    }
+}
+
+sendBtn.addEventListener('click', () => sendMessage());
+input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    </script>
+</body>
+</html>
